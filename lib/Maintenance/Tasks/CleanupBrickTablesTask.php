@@ -30,6 +30,7 @@ class CleanupBrickTablesTask implements TaskInterface
      * @var LoggerInterface
      */
     private $logger;
+    private $mapLowerToCamelCase = [];
 
     /**
      * @param LoggerInterface $logger
@@ -37,6 +38,15 @@ class CleanupBrickTablesTask implements TaskInterface
     public function __construct(LoggerInterface $logger)
     {
         $this->logger = $logger;
+        
+        $obPath = PIMCORE_CLASS_DIRECTORY . '/DataObject/Objectbrick/Data';
+        $files = array_diff(scandir($obPath), array('..', '.'));
+        foreach ($files as $file) {
+            $classname = str_replace('.php','',$file);
+            $class = '\\Pimcore\\Model\\DataObject\\Objectbrick\\Data\\' . $classname;
+            $object = new $class(new \Pimcore\Model\DataObject\Concrete());
+            $this->mapLowerToCamelCase[strtolower($classname)] = $object->getType();
+        }
     }
 
     /**
@@ -60,6 +70,7 @@ class CleanupBrickTablesTask implements TaskInterface
                 $fieldDescriptor = substr($tableName, strlen($prefix));
                 $idx = strpos($fieldDescriptor, '_');
                 $brickType = substr($fieldDescriptor, 0, $idx);
+                $brickType = $this->mapLowerToCamelCase[$brickType] ?? $brickType;
 
                 $brickDef = Definition::getByKey($brickType);
                 if (!$brickDef) {
