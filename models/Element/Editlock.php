@@ -28,6 +28,18 @@ use Pimcore\Tool\Session;
 final class Editlock extends Model\AbstractModel
 {
     /**
+     * On active edit lock answer with editlock response
+     */
+    const TASK_RESPONSE = 'response';
+    /**
+     * On active edit lock overwrite with new user
+     */
+    const TASK_OVERWRITE = 'overwrite';
+    /**
+     * On active edit lock keep existing entry
+     */
+    const TASK_KEEP = 'keep';
+    /**
      * @var int
      */
     protected $id;
