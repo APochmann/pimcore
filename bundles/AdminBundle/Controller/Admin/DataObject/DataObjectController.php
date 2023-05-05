@@ -388,10 +388,25 @@ class DataObjectController extends ElementControllerBase implements KernelContro
         // check for lock
         if ($object->isAllowed('save') || $object->isAllowed('publish') || $object->isAllowed('unpublish') || $object->isAllowed('delete')) {
             if (Element\Editlock::isLocked($objectId, 'object')) {
-                return $this->getEditLockResponse($objectId, 'object');
+                //Hook for modifying editlock handling - e.g. no editLockResponse but keep old lock
+                $lockData = [
+                    'task' => Element\Editlock::TASK_RESPONSE
+                ];
+                $event = new GenericEvent($this, [
+                    'data' => $lockData,
+                    'object' => $object,
+                ]);
+                $eventDispatcher->dispatch($event, AdminEvents::OBJECT_GET_IS_LOCKED);
+                $lockData = $event->getArgument('data');
+                
+                if ($lockData['task'] === Element\Editlock::TASK_RESPONSE) {
+                    return $this->getEditLockResponse($objectId, 'object');
+                } else if ($lockData['task'] === Element\Editlock::TASK_OVERWRITE) {
+                    Element\Editlock::lock($objectId, 'object');
+                }
+            } else {
+                Element\Editlock::lock($objectId, 'object');
             }
-
-            Element\Editlock::lock($request->get('id'), 'object');
         }
 
         // we need to know if the latest version is published or not (a version), because of lazy loaded fields in $this->getDataForObject()
